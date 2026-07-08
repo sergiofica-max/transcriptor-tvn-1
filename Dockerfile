@@ -8,14 +8,15 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copiar e instalar requerimientos
-COPY requirements.txt .
+COPY TVN-TRANSCRIPTOR/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copiar el código fuente
-COPY app.py .
+COPY TVN-TRANSCRIPTOR/ .
 
 # Exponer el puerto que Railway asigna automáticamente
 EXPOSE 8000
 
 # Comando para ejecutar la aplicación
 CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
+
