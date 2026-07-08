@@ -39,7 +39,7 @@
 
         <div id="dropzone" class="w-full max-w-3xl h-64 border-2 border-dashed border-gray-700 bg-[#161f30] rounded-xl flex flex-col items-center justify-center p-6 cursor-pointer hover:border-[#E2001A] transition-all duration-300 relative group">
             
-            <input type="file" id="fileInput" accept="audio/*,video/*" class="hidden">
+            <input type="file" id="fileInput" accept="video/*,audio/*" class="hidden">
 
             <div id="dropzone-icon" class="w-12 h-12 rounded-full bg-[#1e293b] flex items-center justify-center mb-4 group-hover:bg-[#E2001A] transition-colors duration-300">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-400 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -50,12 +50,12 @@
             <p class="text-base font-medium text-gray-300 text-center">
                 Arrastra tu archivo aquí o <span class="text-[#E2001A] font-bold underline group-hover:text-red-400">búscalo en tu equipo</span>
             </p>
-            <p class="text-xs text-gray-500 mt-2">Soporta MP3, WAV, M4A, MP4, MKV (Máx. 25MB en API)</p>
+            <p class="text-xs text-gray-500 mt-2">Soporta formatos de Alta Definición (MP4, MKV, MOV, MP3, WAV, M4A) sin límite de tamaño</p>
         </div>
 
         <div id="status-card" class="w-full max-w-3xl mt-6 p-4 rounded-xl bg-[#1c2536] border border-gray-800 hidden">
             <div class="flex items-center justify-between mb-2">
-                <span id="status-text" class="text-sm font-semibold text-gray-300">Subiendo archivo...</span>
+                <span id="status-text" class="text-sm font-semibold text-gray-300">Preparando archivo...</span>
                 <span id="status-percentage" class="text-xs font-bold text-[#E2001A]">0%</span>
             </div>
             <div class="w-full bg-gray-800 rounded-full h-2">
@@ -72,15 +72,3 @@
     <footer class="p-4 text-center text-xs text-gray-600 border-t border-gray-900 bg-[#0b0f19]">
         Departamento de Prensa TVN © 2026 - Sistema de Transcripción Híbrido Inteligente
     </footer>
-
-    <script>
-        const dropzone = document.getElementById('dropzone');
-        const fileInput = document.getElementById('fileInput');
-        const statusCard = document.getElementById('status-card');
-        const statusBar = document.getElementById('status-bar');
-        const statusText = document.getElementById('status-text');
-        const statusPercentage = document.getElementById('status-percentage');
-        const resultCard = document.getElementById('result-card');
-        const outputText = document.getElementById('transcription-output');
-
-        // 1. Forzar que al hacer clic en la dropzone se abra el buscador
