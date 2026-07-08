@@ -1,36 +1,101 @@
+from fastapi import FastAPI, UploadFile, File, Request
+from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from pydantic import BaseModel
+import uvicorn
+import os
+import uuid
+
 # =====================================================
-# ENTORNO DE DESARROLLO / TRABAJADOR DE IA (WORKER)
+# CONFIGURACIÓN
+# =====================================================
+APP_NAME = "24 Horas | Transcriptor IA"
+VERSION = "1.0"
+
+app = FastAPI(
+    title=APP_NAME,
+    version=VERSION,
+    description="Sistema profesional de transcripción para el Departamento de Prensa"
+)
+
+# Obtener la ruta absoluta del directorio actual para evitar pérdidas en Linux/Railway
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# =====================================================
+# CARPETAS DE EMERGENCIA (Asegurar entorno)
+# =====================================================
+os.makedirs(os.path.join(BASE_DIR, "static"), exist_ok=True)
+os.makedirs(os.path.join(BASE_DIR, "templates"), exist_ok=True)
+os.makedirs(os.path.join(BASE_DIR, "temp"), exist_ok=True)
+
+# Crear un archivo index.html de respaldo SOLO si la carpeta quedó vacía
+RUTA_INDEX = os.path.join(BASE_DIR, "templates", "index.html")
+if not os.path.exists(RUTA_INDEX):
+    with open(RUTA_INDEX, "w", encoding="utf-8") as f:
+        f.write("<h1>Servidor Online - Sube tu index.html real a la carpeta templates de GitHub</h1>")
+
+# =====================================================
+# CONFIGURAR MONTAJES CON RUTAS ABSOLUTAS
+# =====================================================
+app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
+templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
+
+# =====================================================
+# COLA DE PROCESAMIENTO (Bases de datos temporales)
+# =====================================================
+TAREAS_PENDIENTES = {}
+TAREAS_PROCESADAS = {}
+
+class WebhookResultado(BaseModel):
+    task_id: str
+    texto: str
+
+# =====================================================
+# PÁGINA PRINCIPAL (CORREGIDA)
+# =====================================================
+@app.get("/", response_class=HTMLResponse)
+async def home(request: Request):
+    # Corrección clave para evitar TypeError: unhashable type: 'dict' en Jinja2 moderno
+    return templates.TemplateResponse(
+        request=request,
+        name="index.html",
+        context={"titulo": APP_NAME}
+    )
+
+# =====================================================
+# SUBIDA DE ARCHIVOS DESDE EL FRONTEND
+# =====================================================
+@app.post("/upload")
+async def upload(file: UploadFile = File(...)):
+    task_id = str(uuid.uuid4())
+    nombre_archivo = f"{task_id}_{file.filename}"
+    destino = os.path.join(BASE_DIR, "temp", nombre_archivo)
+    
+    with open(destino, "wb") as f:
+        f.write(await file.read())
+    
+    # Registrar en la cola para el Worker (Colab)
+    TAREAS_PENDIENTES[task_id] = {
+        "id": task_id,
+        "nombre": file.filename,
+        "ruta_local": destino,
+        "estado": "pendiente"
+    }
+    
+    return JSONResponse({
+        "ok": True, 
+        "task_id": task_id, 
+        "mensaje": "Audio en cola de procesamiento."
+    })
+
+# =====================================================
+# ENDPOINTS DE COMUNICACIÓN CON EL GOOGLE COLAB WORKER
 # =====================================================
 
-# Servidor Web y API Base
-fastapi
-uvicorn
-jinja2
-python-multipart
-
-# El Motor de Inteligencia Artificial (WhisperX y Faster-Whisper)
-# Nota: En Google Colab, se recomienda instalar whisperx directamente desde su repositorio de GitHub
-# para asegurar la compatibilidad con las últimas versiones de las dependencias.
-faster-whisper
-openai-whisper
-
-# Procesamiento de Audio y Video Avanzado
-pydub
-soundfile
-av
-numpy
-pandas
-tqdm
-
-# Generación de Reportes y Documentos para Prensa
-python-docx
-reportlab
-
-# -----------------------------------------------------
-# NOTA SOBRE PYTORCH (torch y torchaudio):
-# -----------------------------------------------------
-# Si instalas este archivo localmente en tu PC, usará la versión por defecto de pip.
-# Cuando pasemos a Google Colab, la GPU ya viene con PyTorch preinstalado, 
-# por lo que el proceso será ultrarrápido y no saturará ningún servidor.
-torch
-torchaudio
+# El Colab llama aquí para llevarse la siguiente tarea pendiente
+@app.get("/api/worker/next")
+async def get_next_task():
+    for task_id, info in TAREAS_PENDIENTES.items():
+        if info["estado"] == "pendiente":
+            info["estado"] = "
