@@ -7,6 +7,11 @@ RUN apt-get update && apt-get install -y \
     ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
+COPY TVN-TRANSCRIPTOR/requirements.txt .
+
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY TVN-TRANSCRIPTOR/ .
 # Copiar e instalar requerimientos
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
