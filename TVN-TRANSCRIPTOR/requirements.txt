@@ -1,15 +1,47 @@
-streamlit
-faster-whisper
+# ==========================================
+# TVN TRANSCRIPTOR IA
+# Requirements
+# ==========================================
+
+# Framework Web
+fastapi==0.116.1
+uvicorn[standard]==0.35.0
+jinja2==3.1.6
+python-multipart==0.0.20
+
+# IA
 whisperx
+faster-whisper
+openai-whisper
+
+# Machine Learning
 torch
 torchaudio
 transformers
+
+# Audio / Video
 ffmpeg-python
 pydub
-python-docx
-reportlab
-pandas
-numpy
 soundfile
 av
+
+# Datos
+numpy
+pandas
+
+# Exportación
+python-docx
+reportlab
+
+# Utilidades
 tqdm
+python-dotenv
+
+# Limpieza y rendimiento
+psutil
+
+# HTTP
+requests
+
+# Validación
+pydantic
