@@ -2,88 +2,95 @@ from fastapi import FastAPI, UploadFile, File, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from pydantic import BaseModel
 import uvicorn
 import os
+import uuid
 
-# =====================================================
-# CONFIGURACIÓN
-# =====================================================
 APP_NAME = "24 Horas | Transcriptor IA"
 VERSION = "1.0"
 
-app = FastAPI(
-    title=APP_NAME,
-    version=VERSION,
-    description="Sistema profesional de transcripción para el Departamento de Prensa"
-)
-
-# Obtener la ruta absoluta del directorio actual para evitar pérdidas en Linux/Railway
+app = FastAPI(title=APP_NAME, version=VERSION)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# =====================================================
-# CARPETAS DE EMERGENCIA (Asegurar entorno)
-# =====================================================
+# Asegurar que existan las carpetas necesarias en el servidor
 os.makedirs(os.path.join(BASE_DIR, "static"), exist_ok=True)
 os.makedirs(os.path.join(BASE_DIR, "templates"), exist_ok=True)
 os.makedirs(os.path.join(BASE_DIR, "temp"), exist_ok=True)
-os.makedirs(os.path.join(BASE_DIR, "output"), exist_ok=True)
-os.makedirs(os.path.join(BASE_DIR, "logs"), exist_ok=True)
 
-# Crear un archivo index.html de respaldo SOLO si la carpeta quedó completamente vacía
-RUTA_INDEX = os.path.join(BASE_DIR, "templates", "index.html")
-if not os.path.exists(RUTA_INDEX):
-    with open(RUTA_INDEX, "w", encoding="utf-8") as f:
-        f.write("<h1>Servidor Online - Sube tu index.html real a la carpeta templates de GitHub</h1>")
-
-# =====================================================
-# CONFIGURAR MONTAJES CON RUTAS ABSOLUTAS
-# =====================================================
 app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 
-# =====================================================
-# PÁGINA PRINCIPAL
-# =====================================================
+# Estructuras de datos temporales (Cola de procesamiento)
+TAREAS_PENDIENTES = {}
+TAREAS_PROCESADAS = {}
+
+class WebhookResultado(BaseModel):
+    task_id: str
+    texto: str
+
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
-    return templates.TemplateResponse(
-        "index.html",
-        {
-            "request": request,
-            "titulo": APP_NAME
-        }
-    )
+    return templates.TemplateResponse("index.html", {"request": request, "titulo": APP_NAME})
 
-# =====================================================
-# ESTADO DEL SERVIDOR
-# =====================================================
-@app.get("/health")
-async def health():
-    return {
-        "status": "online",
-        "version": VERSION
-    }
-
-# =====================================================
-# SUBIDA DE ARCHIVOS
-# =====================================================
 @app.post("/upload")
 async def upload(file: UploadFile = File(...)):
-    destino = os.path.join(BASE_DIR, "temp", file.filename)
+    task_id = str(uuid.uuid4())
+    nombre_archivo = f"{task_id}_{file.filename}"
+    destino = os.path.join(BASE_DIR, "temp", nombre_archivo)
+    
     with open(destino, "wb") as f:
         f.write(await file.read())
     
-    return JSONResponse(
-        {
-            "ok": True,
-            "archivo": file.filename,
-            "mensaje": "Archivo recibido correctamente."
-        }
-    )
+    TAREAS_PENDIENTES[task_id] = {
+        "id": task_id,
+        "nombre": file.filename,
+        "ruta_local": destino,
+        "estado": "pendiente"
+    }
+    
+    return JSONResponse({"ok": True, "task_id": task_id, "mensaje": "Audio en cola de procesamiento."})
 
 # =====================================================
-# EJECUCIÓN
+# ENDPOINTS DE COMUNICACIÓN CON EL GOOGLE COLAB WORKER
 # =====================================================
+
+@app.get("/api/worker/next")
+async def get_next_task():
+    for task_id, info in TAREAS_PENDIENTES.items():
+        if info["estado"] == "pendiente":
+            info["estado"] = "procesando"
+            return {"hay_tarea": True, "task_id": task_id, "nombre": info["nombre"]}
+    return {"hay_tarea": False}
+
+from fastapi.responses import FileResponse
+@app.get("/api/worker/download/{task_id}")
+async def download_file(task_id: str):
+    if task_id in TAREAS_PENDIENTES:
+        return FileResponse(TAREAS_PENDIENTES[task_id]["ruta_local"])
+    return JSONResponse({"error": "No encontrado"}, status_code=404)
+
+@app.post("/api/worker/webhook")
+async def recibir_transcripcion(data: WebhookResultado):
+    if data.task_id in TAREAS_PENDIENTES:
+        info = TAREAS_PENDIENTES.pop(data.task_id)
+        TAREAS_PROCESADAS[data.task_id] = {
+            "nombre": info["nombre"],
+            "texto": data.texto
+        }
+        if os.path.exists(info["ruta_local"]):
+            os.remove(info["ruta_local"])
+        return {"ok": True}
+    return JSONResponse({"error": "ID de tarea inválido"}, status_code=400)
+
+@app.get("/api/status/{task_id}")
+async def check_status(task_id: str):
+    if task_id in TAREAS_PROCESADAS:
+        return {"estado": "completado", "texto": TAREAS_PROCESADAS[task_id]["texto"]}
+    if task_id in TAREAS_PENDIENTES:
+        return {"estado": TAREAS_PENDIENTES[task_id]["estado"]}
+    return {"estado": "no_existe"}
+
 if __name__ == "__main__":
-    puerto = int(os.environ.get("PORT", 8080))
+    puerto = int(os.environ.get("PORT", 8000))
     uvicorn.run("app:app", host="0.0.0.0", port=puerto, reload=False)
