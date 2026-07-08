@@ -7,12 +7,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .glow-pulse {
-            box-shadow: 0 0 15px rgba(226, 0, 26, 0.2);
-            animation: pulseGlow 2s infinite;
-        }
-        @keyframes pulseGlow {
-            0%, 100% { opacity: 0.9; box-shadow: 0 0 15px rgba(226, 0, 26, 0.2); }
-            50% { opacity: 1; box-shadow: 0 0 25px rgba(226, 0, 26, 0.6); }
+            border-color: #E2001A !important;
+            background-color: #1c2536 !important;
+            box-shadow: 0 0 20px rgba(226, 0, 26, 0.4);
         }
     </style>
 </head>
@@ -34,45 +31,49 @@
     <main class="flex-1 flex flex-col items-center justify-center p-6 w-full max-w-4xl mx-auto">
         <div class="text-center max-w-2xl mb-8">
             <h2 class="text-3xl font-extrabold mb-2 tracking-tight">Transcribir Audio / Video</h2>
-            <p class="text-gray-400 text-sm">Sube tus archivos de reportajes, cuñas o entrevistas para generar el texto automatizado en segundos.</p>
+            <p class="text-gray-400 text-sm">El sistema procesará el material multimedia de forma inmediata utilizando aceleración por GPU.</p>
         </div>
 
-        <div class="w-full bg-[#161f30] border border-gray-800 rounded-xl p-8 flex flex-col items-center justify-center shadow-2xl">
+        <div id="dropzone" class="w-full bg-[#161f30] border-2 border-dashed border-gray-700 rounded-xl p-8 flex flex-col items-center justify-center shadow-2xl transition-all duration-300 min-h-[300px]">
             
-            <div id="dropzone" class="w-full h-40 border-2 border-dashed border-gray-700 bg-[#1a2436] rounded-xl flex flex-col items-center justify-center p-4 transition-all duration-300 mb-6">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-gray-500 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                </svg>
-                <p class="text-sm font-medium text-gray-400 text-center">
-                    Arrastra y suelta tu archivo de video o audio directamente en este recuadro
-                </p>
-            </div>
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-gray-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+            </svg>
+            
+            <p class="text-base font-medium text-gray-300 text-center mb-4">
+                Arrastra tu video aquí o utiliza el buscador tradicional
+            </p>
 
-            <div class="text-xs text-gray-500 font-bold uppercase tracking-wider mb-4">— O TAMBIÉN PUEDES —</div>
-
-            <div class="relative">
+            <div class="relative cursor-pointer">
                 <input type="file" id="fileInput" accept="video/*,audio/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-50">
-                <button type="button" class="bg-[#E2001A] hover:bg-red-700 text-white font-bold px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 transition-colors duration-200 pointer-events-none">
-                    📁 EXCEL ENCONTRAR / BUSCAR EN EL EQUIPO
+                <button type="button" class="bg-[#E2001A] hover:bg-red-700 text-white font-bold px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 transition-colors duration-200">
+                    📁 BUSCAR VIDEO O AUDIO EN EL EQUIPO
                 </button>
             </div>
             
-            <p class="text-xs text-gray-500 mt-4 text-center">Formatos de alta definición soportados: MP4, MKV, MOV, MP3, WAV, M4A</p>
+            <p class="text-xs text-gray-500 mt-6 text-center">Formatos de alta definición soportados de forma directa: MP4, MKV, MOV, MP3, WAV, M4A</p>
         </div>
 
-        <div id="status-card" class="w-full mt-6 p-4 rounded-xl bg-[#1c2536] border border-gray-800 hidden">
-            <div class="flex items-center justify-between mb-2">
-                <span id="status-text" class="text-sm font-semibold text-gray-300">Preparando archivo...</span>
+        <div id="status-card" class="w-full mt-6 p-6 rounded-xl bg-[#1c2536] border border-gray-800 hidden">
+            <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-3 h-3 bg-[#E2001A] rounded-full animate-ping"></div>
+                    <span id="status-text" class="text-sm font-semibold text-gray-200">Iniciando flujo de transcripción...</span>
+                </div>
                 <span id="status-percentage" class="text-xs font-bold text-[#E2001A]">0%</span>
             </div>
-            <div class="w-full bg-gray-800 rounded-full h-2">
-                <div id="status-bar" class="bg-[#E2001A] h-2 rounded-full transition-all duration-200" style="width: 0%"></div>
+            <div class="w-full bg-gray-800 rounded-full h-2.5 mb-2">
+                <div id="status-bar" class="bg-[#E2001A] h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
             </div>
+            <p class="text-xs text-gray-400 italic" id="status-subtext">Conectando con los motores de WhisperX en tiempo real...</p>
         </div>
 
         <div id="result-card" class="w-full mt-6 hidden">
-            <label class="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Libreto de Prensa Generado:</label>
-            <textarea id="transcription-output" class="w-full h-64 p-4 bg-[#161f30] border-l-4 border-[#E2001A] text-gray-100 font-mono text-sm rounded-r-xl focus:outline-none resize-none" readonly></textarea>
+            <div class="flex justify-between items-center mb-2">
+                <label class="block text-xs font-bold uppercase tracking-wider text-gray-400">Libreto de Prensa Generado:</label>
+                <span class="text-xs text-emerald-400 font-bold bg-emerald-950/50 px-2 py-0.5 rounded border border-emerald-800 animate-pulse">● Transcribiendo en vivo</span>
+            </div>
+            <textarea id="transcription-output" class="w-full h-72 p-4 bg-[#161f30] border-l-4 border-[#E2001A] text-gray-100 font-mono text-sm rounded-r-xl focus:outline-none resize-none shadow-inner" readonly placeholder="Esperando las primeras líneas del motor de IA..."></textarea>
         </div>
     </main>
 
@@ -86,45 +87,62 @@
         const statusCard = document.getElementById('status-card');
         const statusBar = document.getElementById('status-bar');
         const statusText = document.getElementById('status-text');
+        const statusSubtext = document.getElementById('status-subtext');
         const statusPercentage = document.getElementById('status-percentage');
         const resultCard = document.getElementById('result-card');
         const outputText = document.getElementById('transcription-output');
 
-        // Escucha directa al input nativo
+        // Escuchar selección por buscador tradicional
         fileInput.addEventListener('change', (e) => {
             if (e.target.files && e.target.files.length > 0) {
                 handleFile(e.target.files[0]);
             }
         });
 
-        // Prevenir comportamiento por defecto del navegador en toda la ventana
-        window.addEventListener('dragover', (e) => e.preventDefault(), false);
-        window.addEventListener('drop', (e) => e.preventDefault(), false);
-
-        // Eventos sobre la zona de arrastre
-        dropzone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            dropzone.classList.add('border-[#E2001A]', 'bg-[#1c2536]', 'glow-pulse');
+        // PREVENIR COMPORTAMIENTO POR DEFECTO DEL NAVEGADOR (EVITA QUE ABRA EL VIDEO)
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            window.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            }, false);
+            dropzone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            }, false);
         });
 
-        dropzone.addEventListener('dragleave', () => {
-            dropzone.classList.remove('border-[#E2001A]', 'bg-[#1c2536]', 'glow-pulse');
+        // EFECTOS VISUALES AL ARRASTRAR SOBRE LA DROPZONE
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropzone.addEventListener(eventName, () => {
+                dropzone.classList.add('glow-pulse');
+            }, false);
         });
 
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropzone.addEventListener(eventName, () => {
+                dropzone.classList.remove('glow-pulse');
+            }, false);
+        });
+
+        // CAPTURAR SOLTADO DE ARCHIVO (DRAG & DROP CORREGIDO)
         dropzone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropzone.classList.remove('border-[#E2001A]', 'bg-[#1c2536]', 'glow-pulse');
-            if (e.dataTransfer && e.dataTransfer.files.length > 0) {
-                handleFile(e.dataTransfer.files[0]);
+            const dt = e.dataTransfer;
+            if (dt && dt.files && dt.files.length > 0) {
+                handleFile(dt.files[0]);
             }
-        });
+        }, false);
 
+        // ENVIAR Y ACTIVAR TRANSCRIPCIÓN INMEDIATA
         function handleFile(file) {
             if (!file) return;
 
+            // Mostrar paneles INMEDIATAMENTE para dar feedback al usuario de prensa
             statusCard.classList.remove('hidden');
-            resultCard.classList.add('hidden');
-            statusText.innerText = `Subiendo: ${file.name} (${(file.size / (1024 * 1024)).toFixed(1)} MB)`;
+            resultCard.classList.remove('hidden'); // Se abre el cuadro de texto de inmediato
+            outputText.value = ""; 
+            
+            statusText.innerText = "Subiendo y preparando flujo multimedia...";
+            statusSubtext.innerText = `Procesando: ${file.name} (${(file.size / (1024 * 1024)).toFixed(1)} MB)`;
             
             const formData = new FormData();
             formData.append('file', file);
@@ -132,6 +150,7 @@
             const xhr = new XMLHttpRequest();
             xhr.open('POST', '/upload', true);
 
+            // Progreso de carga en tiempo real
             xhr.upload.addEventListener('progress', (e) => {
                 if (e.lengthComputable) {
                     const porcentaje = Math.round((e.loaded / e.total) * 100);
@@ -139,8 +158,8 @@
                     statusPercentage.innerText = porcentaje + '%';
                     
                     if (porcentaje === 100) {
-                        statusText.innerText = "Material recibido. Procesando con WhisperX en Colab...";
-                        statusBar.classList.add('animate-pulse');
+                        statusText.innerText = "Video recibido en el servidor.";
+                        statusSubtext.innerText = "Iniciando procesamiento con el motor WhisperX...";
                     }
                 }
             });
@@ -148,15 +167,17 @@
             xhr.onload = function() {
                 if (xhr.status === 200) {
                     const respuesta = JSON.parse(xhr.responseText);
+                    // Comenzar a consultar el texto de inmediato
                     verificarEstado(respuesta.task_id);
                 } else {
-                    statusText.innerText = "Error al subir material a Railway.";
+                    statusText.innerText = "Error al inicializar la tarea en Railway.";
                 }
             };
 
             xhr.send(formData);
         }
 
+        // CONSULTA EN TIEMPO REAL AL WORKER
         function verificarEstado(taskId) {
             const interval = setInterval(async () => {
                 try {
@@ -164,17 +185,20 @@
                     const data = await res.json();
 
                     if (data.estado === 'procesando') {
-                        statusText.innerText = "El motor de IA de Google Colab está procesando tu libreto...";
+                        statusText.innerText = "El motor de Inteligencia Artificial está transcribiendo...";
+                        statusSubtext.innerText = "Generando libreto por bloques de tiempo con WhisperX...";
                     } else if (data.estado === 'completado') {
                         clearInterval(interval);
                         statusCard.classList.add('hidden');
-                        resultCard.classList.remove('hidden');
                         outputText.value = data.texto;
+                        // Cambiar la etiqueta a completado
+                        document.querySelector('.animate-pulse').innerText = "● Transcripción Finalizada";
+                        document.querySelector('.animate-pulse').className = "text-xs text-emerald-400 font-bold bg-emerald-950/50 px-2 py-0.5 rounded border border-emerald-800";
                     }
                 } catch (err) {
-                    console.error(err);
+                    console.error("Error en polling:", err);
                 }
-            }, 3000);
+            }, 2500); // Consulta rápida cada 2.5 segundos para máxima inmediatez
         }
     </script>
 </body>
