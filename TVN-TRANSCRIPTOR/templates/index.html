@@ -4,54 +4,83 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ titulo }}</title>
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .glow-pulse {
+            box-shadow: 0 0 15px rgba(226, 0, 26, 0.2);
+            animation: pulseGlow 2s infinite;
+        }
+        @keyframes pulseGlow {
+            0%, 100% { opacity: 0.9; box-shadow: 0 0 15px rgba(226, 0, 26, 0.2); }
+            50% { opacity: 1; box-shadow: 0 0 25px rgba(226, 0, 26, 0.6); }
+        }
+    </style>
 </head>
-<body class="bg-slate-900 text-slate-100 font-sans min-h-screen flex flex-col">
+<body class="bg-[#121824] text-white font-sans min-h-screen flex flex-col justify-between">
 
-    <header class="bg-slate-950 border-b border-slate-800 px-6 py-4 flex items-center justify-between">
-        <div class="flex items-center space-x-3">
-            <div class="bg-red-600 p-2 rounded-lg text-white">
-                <i data-lucide="radio" class="w-6 h-6 animate-pulse"></i>
-            </div>
+    <header class="p-6 border-b border-gray-800 flex justify-between items-center bg-[#0b0f19]">
+        <div class="flex items-center gap-3">
+            <div class="w-4 h-4 bg-[#E2001A] rounded-full animate-pulse"></div>
             <div>
-                <h1 class="font-bold text-lg tracking-wide text-white">24 HORAS</h1>
-                <p class="text-xs text-slate-400">Transcriptor de Prensa IA</p>
+                <h1 class="text-xl font-bold tracking-wider text-white">24 HORAS</h1>
+                <p class="text-xs text-gray-400">Transcriptor de Prensa IA</p>
             </div>
         </div>
-        <div class="flex items-center space-x-2 bg-slate-900 px-3 py-1.5 rounded-full border border-slate-800">
-            <span class="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-ping"></span>
-            <span class="text-xs font-medium text-emerald-400">Servidor API Online</span>
-        </div>
+        <span class="bg-emerald-950 text-emerald-400 border border-emerald-800 text-xs px-3 py-1 rounded-full font-medium">
+            ● Servidor API Online
+        </span>
     </header>
 
-    <main class="flex-1 max-w-4xl w-full mx-auto p-6 flex flex-col justify-center">
-        
-        <div class="text-center mb-8">
-            <h2 class="text-3xl font-extrabold text-white mb-2">Transcribir Audio / Video</h2>
-            <p class="text-slate-400 max-w-md mx-auto">Sube tus archivos de reportajes, cuñas o entrevistas para generar el texto automatizado en segundos.</p>
+    <main class="flex-1 flex flex-col items-center justify-center p-6">
+        <div class="text-center max-w-2xl mb-8">
+            <h2 class="text-3xl font-extrabold mb-2 tracking-tight">Transcribir Audio / Video</h2>
+            <p class="text-gray-400 text-sm">Sube tus archivos de reportajes, cuñas o entrevistas para generar el texto automatizado en segundos.</p>
         </div>
 
-        <div class="bg-slate-950 border-2 border-dashed border-slate-700 hover:border-red-500 rounded-xl p-10 transition-all duration-300 text-center cursor-pointer group" id="dropzone">
-            <input type="file" id="fileInput" class="hidden" accept="audio/*,video/*">
+        <div id="dropzone" class="w-full max-w-3xl h-64 border-2 border-dashed border-gray-700 bg-[#161f30] rounded-xl flex flex-col items-center justify-center p-6 cursor-pointer hover:border-[#E2001A] transition-all duration-300 relative group">
             
-            <div class="flex flex-col items-center space-y-4" id="uploadPrompt">
-                <div class="bg-slate-900 p-4 rounded-full text-slate-400 group-hover:text-red-500 group-hover:bg-slate-900/50 transition-colors">
-                    <i data-lucide="cloud-upload" class="w-12 h-12"></i>
-                </div>
-                <div>
-                    <p class="text-base font-semibold text-slate-200">Arrastra tu archivo aquí o <span class="text-red-500 group-hover:underline">búscalo en tu equipo</span></p>
-                    <p class="text-xs text-slate-500 mt-1">Soporta MP3, WAV, M4A, MP4, MKV (Máx. 25MB en API)</p>
-                </div>
+            <input type="file" id="fileInput" accept="audio/*,video/*" class="hidden">
+
+            <div id="dropzone-icon" class="w-12 h-12 rounded-full bg-[#1e293b] flex items-center justify-center mb-4 group-hover:bg-[#E2001A] transition-colors duration-300">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-400 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
             </div>
 
-            <div class="hidden flex-col items-center space-y-4" id="uploadProgress">
-                <div class="animate-spin text-red-500">
-                    <i data-lucide="loader-2" class="w-12 h-12"></i>
-                </div>
-                <div class="w-full max-w-md bg-slate-800 rounded-full h-2 overflow-hidden">
-                    <div class="bg-red-600 h-full w-0 transition-all duration-300" id="progressBar"></div>
-                </div>
-                <p class="text-sm text-slate-300" id="statusText">Subiendo archivo al servidor de prensa...</p>
+            <p class="text-base font-medium text-gray-300 text-center">
+                Arrastra tu archivo aquí o <span class="text-[#E2001A] font-bold underline group-hover:text-red-400">búscalo en tu equipo</span>
+            </p>
+            <p class="text-xs text-gray-500 mt-2">Soporta MP3, WAV, M4A, MP4, MKV (Máx. 25MB en API)</p>
+        </div>
+
+        <div id="status-card" class="w-full max-w-3xl mt-6 p-4 rounded-xl bg-[#1c2536] border border-gray-800 hidden">
+            <div class="flex items-center justify-between mb-2">
+                <span id="status-text" class="text-sm font-semibold text-gray-300">Subiendo archivo...</span>
+                <span id="status-percentage" class="text-xs font-bold text-[#E2001A]">0%</span>
+            </div>
+            <div class="w-full bg-gray-800 rounded-full h-2">
+                <div id="status-bar" class="bg-[#E2001A] h-2 rounded-full transition-all duration-200" style="width: 0%"></div>
             </div>
         </div>
+
+        <div id="result-card" class="w-full max-w-3xl mt-6 hidden">
+            <label class="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Libreto de Prensa Generado:</label>
+            <textarea id="transcription-output" class="w-full h-64 p-4 bg-[#161f30] border-l-4 border-[#E2001A] text-gray-100 font-mono text-sm rounded-r-xl focus:outline-none resize-none" readonly></textarea>
+        </div>
+    </main>
+
+    <footer class="p-4 text-center text-xs text-gray-600 border-t border-gray-900 bg-[#0b0f19]">
+        Departamento de Prensa TVN © 2026 - Sistema de Transcripción Híbrido Inteligente
+    </footer>
+
+    <script>
+        const dropzone = document.getElementById('dropzone');
+        const fileInput = document.getElementById('fileInput');
+        const statusCard = document.getElementById('status-card');
+        const statusBar = document.getElementById('status-bar');
+        const statusText = document.getElementById('status-text');
+        const statusPercentage = document.getElementById('status-percentage');
+        const resultCard = document.getElementById('result-card');
+        const outputText = document.getElementById('transcription-output');
+
+        // 1. Forzar que al hacer clic en la dropzone se abra el buscador
