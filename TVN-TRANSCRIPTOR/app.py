@@ -19,7 +19,7 @@ app = FastAPI(
 )
 
 # =====================================================
-# CARPETAS
+# ASEGURAR CARPETAS (Ajustado para producción)
 # =====================================================
 
 os.makedirs("static", exist_ok=True)
@@ -28,8 +28,13 @@ os.makedirs("temp", exist_ok=True)
 os.makedirs("output", exist_ok=True)
 os.makedirs("logs", exist_ok=True)
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
+# Crear un archivo fantasma index.html si no existe para que Jinja2 no falle
+if not os.path.exists("templates/index.html"):
+    with open("templates/index.html", "w") as f:
+        f.write("<h1>Servidor Online - Esperando Frontend</h1>")
 
+# Montar estáticos después de asegurar que la carpeta existe
+app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 # =====================================================
@@ -52,7 +57,6 @@ async def home(request: Request):
 
 @app.get("/health")
 async def health():
-
     return {
         "status": "online",
         "version": VERSION
@@ -60,17 +64,13 @@ async def health():
 
 # =====================================================
 # SUBIDA DE ARCHIVOS
-# (Whisper se agregará en el próximo capítulo)
 # =====================================================
 
 @app.post("/upload")
 async def upload(file: UploadFile = File(...)):
-
     destino = os.path.join("temp", file.filename)
-
     with open(destino, "wb") as f:
         f.write(await file.read())
-
     return JSONResponse(
         {
             "ok": True,
@@ -80,16 +80,13 @@ async def upload(file: UploadFile = File(...)):
     )
 
 # =====================================================
-# EJECUCIÓN LOCAL
+# EJECUCIÓN LOCAL / PRODUCCIÓN
 # =====================================================
-
 if __name__ == "__main__":
-
     puerto = int(os.environ.get("PORT", 8000))
-
     uvicorn.run(
         "app:app",
         host="0.0.0.0",
         port=puerto,
-        reload=True
+        reload=False  # Falso en producción para evitar bucles de memoria
     )
