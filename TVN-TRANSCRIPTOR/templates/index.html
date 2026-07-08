@@ -1,20 +1,57 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
-
-<meta charset="UTF-8">
-
-<title>{{ titulo }}</title>
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ titulo }}</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
 </head>
+<body class="bg-slate-900 text-slate-100 font-sans min-h-screen flex flex-col">
 
-<body>
+    <header class="bg-slate-950 border-b border-slate-800 px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+            <div class="bg-red-600 p-2 rounded-lg text-white">
+                <i data-lucide="radio" class="w-6 h-6 animate-pulse"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-lg tracking-wide text-white">24 HORAS</h1>
+                <p class="text-xs text-slate-400">Transcriptor de Prensa IA</p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-2 bg-slate-900 px-3 py-1.5 rounded-full border border-slate-800">
+            <span class="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-ping"></span>
+            <span class="text-xs font-medium text-emerald-400">Servidor API Online</span>
+        </div>
+    </header>
 
-<h1>🔴 24 Horas | Transcriptor IA</h1>
+    <main class="flex-1 max-w-4xl w-full mx-auto p-6 flex flex-col justify-center">
+        
+        <div class="text-center mb-8">
+            <h2 class="text-3xl font-extrabold text-white mb-2">Transcribir Audio / Video</h2>
+            <p class="text-slate-400 max-w-md mx-auto">Sube tus archivos de reportajes, cuñas o entrevistas para generar el texto automatizado en segundos.</p>
+        </div>
 
-<p>Servidor funcionando correctamente.</p>
+        <div class="bg-slate-950 border-2 border-dashed border-slate-700 hover:border-red-500 rounded-xl p-10 transition-all duration-300 text-center cursor-pointer group" id="dropzone">
+            <input type="file" id="fileInput" class="hidden" accept="audio/*,video/*">
+            
+            <div class="flex flex-col items-center space-y-4" id="uploadPrompt">
+                <div class="bg-slate-900 p-4 rounded-full text-slate-400 group-hover:text-red-500 group-hover:bg-slate-900/50 transition-colors">
+                    <i data-lucide="cloud-upload" class="w-12 h-12"></i>
+                </div>
+                <div>
+                    <p class="text-base font-semibold text-slate-200">Arrastra tu archivo aquí o <span class="text-red-500 group-hover:underline">búscalo en tu equipo</span></p>
+                    <p class="text-xs text-slate-500 mt-1">Soporta MP3, WAV, M4A, MP4, MKV (Máx. 25MB en API)</p>
+                </div>
+            </div>
 
-</body>
-
-</html>
+            <div class="hidden flex-col items-center space-y-4" id="uploadProgress">
+                <div class="animate-spin text-red-500">
+                    <i data-lucide="loader-2" class="w-12 h-12"></i>
+                </div>
+                <div class="w-full max-w-md bg-slate-800 rounded-full h-2 overflow-hidden">
+                    <div class="bg-red-600 h-full w-0 transition-all duration-300" id="progressBar"></div>
+                </div>
+                <p class="text-sm text-slate-300" id="statusText">Subiendo archivo al servidor de prensa...</p>
+            </div>
+        </div>
