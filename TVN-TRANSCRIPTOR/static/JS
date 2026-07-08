@@ -1,0 +1,13 @@
+// Manejador Global de la Aplicación de Transcripción
+document.addEventListener("DOMContentLoaded", () => {
+    console.log("Transcriptor de Prensa listo y conectado a la API externa.");
+    
+    // Aquí puedes mover las funciones de arrastrar, soltar (dropzone)
+    // y las peticiones fetch() que teníamos en el index.html
+});
+
+// Función futura para conectar con WebSockets o Pooling para recibir el texto de WhisperX
+function verificarEstadoTranscripcion(idTarea) {
+    // Esto lo usaremos en el Capítulo 3 para actualizar la interfaz
+    // cuando Google Colab termine de procesar el archivo.
+}
