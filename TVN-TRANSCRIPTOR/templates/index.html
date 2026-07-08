@@ -1,71 +1,117 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ titulo }}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        .glow-pulse {
-            border-color: #E2001A !important;
-            background-color: #1a2436 !important;
-            box-shadow: 0 0 25px rgba(226, 0, 26, 0.5);
+from fastapi import FastAPI, UploadFile, File, Request
+from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+import uvicorn
+import os
+import uuid
+
+APP_NAME = "24 Horas | Transcriptor IA"
+VERSION = "1.0"
+
+app = FastAPI(title=APP_NAME, version=VERSION)
+
+# Liberar los permisos de red para que Colab pueda entrar sin bloqueos
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# Crear las carpetas internas en Railway
+os.makedirs(os.path.join(BASE_DIR, "static"), exist_ok=True)
+os.makedirs(os.path.join(BASE_DIR, "templates"), exist_ok=True)
+os.makedirs(os.path.join(BASE_DIR, "temp"), exist_ok=True)
+
+app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
+templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
+
+# Almacenamiento en memoria para las tareas de prensa
+TAREAS_PENDIENTES = {}
+TAREAS_PROCESADAS = {}
+
+class WebhookResultado(BaseModel):
+    task_id: str
+    texto: str
+
+# 1. PÁGINA PRINCIPAL DE LA WEB
+@app.get("/", response_class=HTMLResponse)
+async def home(request: Request):
+    return templates.TemplateResponse(
+        request=request,
+        name="index.html",
+        context={"titulo": APP_NAME}
+    )
+
+# 2. RUTA DONDE LLEGAN LOS VIDEOS DE LA WEB
+@app.post("/upload")
+async def upload(file: UploadFile = File(...)):
+    task_id = str(uuid.uuid4())
+    nombre_archivo = f"{task_id}_{file.filename}"
+    destino = os.path.join(BASE_DIR, "temp", nombre_archivo)
+    
+    with open(destino, "wb") as f:
+        f.write(await file.read())
+    
+    TAREAS_PENDIENTES[task_id] = {
+        "id": task_id,
+        "nombre": file.filename,
+        "ruta_local": destino,
+        "estado": "pendiente"
+    }
+    
+    return JSONResponse({"ok": True, "task_id": task_id, "mensaje": "Audio en cola."})
+
+# =====================================================
+# RUTAS DE CONEXIÓN CON EL WORKER (LO QUE LE FALTABA A TU SERVIDOR)
+# =====================================================
+
+# Colab llama aquí para preguntar si hay videos nuevos (Aquí daba el error 404)
+@app.get("/api/worker/next")
+async def get_next_task():
+    for task_id, info in TAREAS_PENDIENTES.items():
+        if info["estado"] == "pendiente":
+            info["estado"] = "procesando"
+            return {"hay_tarea": True, "task_id": task_id, "nombre": info["nombre"]}
+    return {"hay_tarea": False}
+
+# Colab llama aquí para descargar el video físicamente a su memoria
+from fastapi.responses import FileResponse
+@app.get("/api/worker/download/{task_id}")
+async def download_file(task_id: str):
+    if task_id in TAREAS_PENDIENTES:
+        return FileResponse(TAREAS_PENDIENTES[task_id]["ruta_local"])
+    return JSONResponse({"error": "No encontrado"}, status_code=404)
+
+# Colab llama aquí para devolver el texto ya transcrito
+@app.post("/api/worker/webhook")
+async def recibir_transcripcion(data: WebhookResultado):
+    if data.task_id in TAREAS_PENDIENTES:
+        info = TAREAS_PENDIENTES.pop(data.task_id)
+        TAREAS_PROCESADAS[data.task_id] = {
+            "nombre": info["nombre"],
+            "texto": data.texto
         }
-    </style>
-</head>
-<body class="bg-[#121824] text-white font-sans min-h-screen flex flex-col justify-between">
+        if os.path.exists(info["ruta_local"]):
+            os.remove(info["ruta_local"])
+        return {"ok": True}
+    return JSONResponse({"error": "ID inválido"}, status_code=400)
 
-    <header class="p-6 border-b border-gray-800 flex justify-between items-center bg-[#0b0f19]">
-        <div class="flex items-center gap-3">
-            <div class="w-4 h-4 bg-[#E2001A] rounded-full animate-pulse"></div>
-            <div>
-                <h1 class="text-xl font-bold tracking-wider text-white">24 HORAS</h1>
-                <p class="text-xs text-gray-400">Transcriptor de Prensa IA</p>
-            </div>
-        </div>
-        <span class="bg-emerald-950 text-emerald-400 border border-emerald-800 text-xs px-3 py-1 rounded-full font-medium">
-            ● Servidor API Online
-        </span>
-    </header>
+# La página web llama aquí cada 2 segundos para ver si el texto ya está listo
+@app.get("/api/status/{task_id}")
+async def check_status(task_id: str):
+    if task_id in TAREAS_PROCESADAS:
+        return {"estado": "completado", "texto": TAREAS_PROCESADAS[task_id]["texto"]}
+    if task_id in TAREAS_PENDIENTES:
+        return {"estado": TAREAS_PENDIENTES[task_id]["estado"]}
+    return {"estado": "no_existe"}
 
-    <main class="flex-1 flex flex-col items-center justify-center p-6 w-full max-w-4xl mx-auto">
-        <div class="text-center max-w-2xl mb-8">
-            <h2 class="text-3xl font-extrabold mb-2 tracking-tight">Transcribir Audio / Video</h2>
-            <p class="text-gray-400 text-sm">Sube tus archivos de reportajes, cuñas o entrevistas para generar el texto automatizado en segundos.</p>
-        </div>
-
-        <div class="w-full bg-[#161f30] border border-gray-800 rounded-xl p-8 flex flex-col items-center justify-center shadow-2xl">
-            
-            <div id="dropzone" class="w-full h-40 border-2 border-dashed border-gray-700 bg-[#1a2436] rounded-xl flex flex-col items-center justify-center p-4 transition-all duration-300 mb-6">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-gray-500 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                </svg>
-                <p class="text-sm font-medium text-gray-400 text-center">
-                    Arrastra y suelta tu archivo de video o audio directamente en este recuadro
-                </p>
-            </div>
-
-            <div class="text-xs text-gray-500 font-bold uppercase tracking-wider mb-4">— O TAMBIÉN PUEDES —</div>
-
-            <div class="relative">
-                <input type="file" id="fileInput" accept="video/*,audio/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-50">
-                <button type="button" class="bg-[#E2001A] hover:bg-red-700 text-white font-bold px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 transition-colors duration-200 pointer-events-none">
-                    📁 EXCEL ENCONTRAR / BUSCAR EN EL EQUIPO
-                </button>
-            </div>
-            
-            <p class="text-xs text-gray-500 mt-5 text-center">Soporta formatos de Alta Definición (MP4, MKV, MOV, MP3, WAV, M4A) sin límite de tamaño</p>
-        </div>
-
-        <div id="status-card" class="w-full mt-6 p-4 rounded-xl bg-[#1c2536] border border-gray-800 hidden">
-            <div class="flex items-center justify-between mb-2">
-                <div class="flex items-center gap-2">
-                    <div class="w-2.5 h-2.5 bg-[#E2001A] rounded-full animate-ping"></div>
-                    <span id="status-text" class="text-xs font-semibold text-gray-200">Subiendo archivo multimedia...</span>
-                </div>
-                <span id="status-percentage" class="text-xs font-bold text-[#E2001A]">0%</span>
-            </div>
-            <div class="w-full bg-gray-800 rounded-full h-2 mb-1">
-                <div id="status-bar" class="bg-[#E2001A] h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
-            </div>
-            <p class="text-[11px] text-gray-40
+if __name__ == "__main__":
+    puerto = int(os.environ.get("PORT", 8000))
+    uvicorn.run("app:app", host="0.0.0.0", port=puerto, reload=False)
