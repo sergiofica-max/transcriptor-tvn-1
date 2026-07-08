@@ -1,0 +1,8 @@
+APP_NAME="24 Horas | Transcriptor"
+APP_VERSION="3.0"
+DEFAULT_LANGUAGE="es"
+MODEL_NAME="turbo"
+DEVICE="auto"
+TEMP_FOLDER="temp"
+OUTPUT_FOLDER="output"
+MAX_FILE_SIZE=5000

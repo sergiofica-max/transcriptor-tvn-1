@@ -1,0 +1,15 @@
+streamlit
+faster-whisper
+whisperx
+torch
+torchaudio
+transformers
+ffmpeg-python
+pydub
+python-docx
+reportlab
+pandas
+numpy
+soundfile
+av
+tqdm
