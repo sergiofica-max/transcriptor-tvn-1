@@ -7,11 +7,11 @@ RUN apt-get update && apt-get install -y \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt .
+COPY TVN-TRANSCRIPTOR/requirements.txt .
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . .
+COPY TVN-TRANSCRIPTOR/ .
 
 EXPOSE 8000
 
