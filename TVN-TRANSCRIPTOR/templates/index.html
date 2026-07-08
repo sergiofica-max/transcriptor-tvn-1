@@ -69,10 +69,9 @@ async def upload(file: UploadFile = File(...)):
     return JSONResponse({"ok": True, "task_id": task_id, "mensaje": "Audio en cola."})
 
 # =====================================================
-# RUTAS DE CONEXIÓN CON EL WORKER (LO QUE LE FALTABA A TU SERVIDOR)
+# RUTAS DE CONEXIÓN CON EL WORKER
 # =====================================================
 
-# Colab llama aquí para preguntar si hay videos nuevos (Aquí daba el error 404)
 @app.get("/api/worker/next")
 async def get_next_task():
     for task_id, info in TAREAS_PENDIENTES.items():
@@ -81,7 +80,6 @@ async def get_next_task():
             return {"hay_tarea": True, "task_id": task_id, "nombre": info["nombre"]}
     return {"hay_tarea": False}
 
-# Colab llama aquí para descargar el video físicamente a su memoria
 from fastapi.responses import FileResponse
 @app.get("/api/worker/download/{task_id}")
 async def download_file(task_id: str):
@@ -89,7 +87,6 @@ async def download_file(task_id: str):
         return FileResponse(TAREAS_PENDIENTES[task_id]["ruta_local"])
     return JSONResponse({"error": "No encontrado"}, status_code=404)
 
-# Colab llama aquí para devolver el texto ya transcrito
 @app.post("/api/worker/webhook")
 async def recibir_transcripcion(data: WebhookResultado):
     if data.task_id in TAREAS_PENDIENTES:
@@ -103,7 +100,6 @@ async def recibir_transcripcion(data: WebhookResultado):
         return {"ok": True}
     return JSONResponse({"error": "ID inválido"}, status_code=400)
 
-# La página web llama aquí cada 2 segundos para ver si el texto ya está listo
 @app.get("/api/status/{task_id}")
 async def check_status(task_id: str):
     if task_id in TAREAS_PROCESADAS:
