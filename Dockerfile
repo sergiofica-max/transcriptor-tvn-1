@@ -16,4 +16,3 @@ COPY TVN-TRANSCRIPTOR/ .
 
 # 3. Puerto dinámico para Railway
 CMD uvicorn app:app --host 0.0.0.0 --port ${PORT:-8000}
-Fix: limpiar líneas duplicadas en Dockerfile"
