@@ -2,11 +2,6 @@ fastapi
 uvicorn
 jinja2
 python-multipart
-whisperx
-faster-whisper
-torch
-torchaudio
-ffmpeg-python
 pydub
 numpy
 pandas
@@ -15,4 +10,3 @@ reportlab
 soundfile
 av
 tqdm
-
