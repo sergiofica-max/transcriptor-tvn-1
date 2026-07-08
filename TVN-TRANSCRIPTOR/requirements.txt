@@ -1,47 +1,17 @@
-# ==========================================
-# TVN TRANSCRIPTOR IA
-# Requirements
-# ==========================================
-
-# Framework Web
-fastapi==0.116.1
-uvicorn[standard]==0.35.0
-jinja2==3.1.6
-python-multipart==0.0.20
-
-# IA
+fastapi
+uvicorn
+jinja2
+python-multipart
 whisperx
 faster-whisper
-openai-whisper
-
-# Machine Learning
 torch
 torchaudio
-transformers
-
-# Audio / Video
 ffmpeg-python
 pydub
-soundfile
-av
-
-# Datos
 numpy
 pandas
-
-# Exportación
 python-docx
 reportlab
-
-# Utilidades
+soundfile
+av
 tqdm
-python-dotenv
-
-# Limpieza y rendimiento
-psutil
-
-# HTTP
-requests
-
-# Validación
-pydantic
