@@ -1,0 +1,36 @@
+# =====================================================
+# ENTORNO DE DESARROLLO / TRABAJADOR DE IA (WORKER)
+# =====================================================
+
+# Servidor Web y API Base
+fastapi
+uvicorn
+jinja2
+python-multipart
+
+# El Motor de Inteligencia Artificial (WhisperX y Faster-Whisper)
+# Nota: En Google Colab, se recomienda instalar whisperx directamente desde su repositorio de GitHub
+# para asegurar la compatibilidad con las últimas versiones de las dependencias.
+faster-whisper
+openai-whisper
+
+# Procesamiento de Audio y Video Avanzado
+pydub
+soundfile
+av
+numpy
+pandas
+tqdm
+
+# Generación de Reportes y Documentos para Prensa
+python-docx
+reportlab
+
+# -----------------------------------------------------
+# NOTA SOBRE PYTORCH (torch y torchaudio):
+# -----------------------------------------------------
+# Si instalas este archivo localmente en tu PC, usará la versión por defecto de pip.
+# Cuando pasemos a Google Colab, la GPU ya viene con PyTorch preinstalado, 
+# por lo que el proceso será ultrarrápido y no saturará ningún servidor.
+torch
+torchaudio
