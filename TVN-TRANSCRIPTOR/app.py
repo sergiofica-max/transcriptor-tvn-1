@@ -8,7 +8,6 @@ import os
 # =====================================================
 # CONFIGURACIÓN
 # =====================================================
-
 APP_NAME = "24 Horas | Transcriptor IA"
 VERSION = "1.0"
 
@@ -18,29 +17,33 @@ app = FastAPI(
     description="Sistema profesional de transcripción para el Departamento de Prensa"
 )
 
+# Obtener la ruta absoluta del directorio actual para evitar pérdidas en Linux/Railway
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 # =====================================================
-# ASEGURAR CARPETAS (Ajustado para producción)
+# CARPETAS DE EMERGENCIA (Asegurar entorno)
 # =====================================================
+os.makedirs(os.path.join(BASE_DIR, "static"), exist_ok=True)
+os.makedirs(os.path.join(BASE_DIR, "templates"), exist_ok=True)
+os.makedirs(os.path.join(BASE_DIR, "temp"), exist_ok=True)
+os.makedirs(os.path.join(BASE_DIR, "output"), exist_ok=True)
+os.makedirs(os.path.join(BASE_DIR, "logs"), exist_ok=True)
 
-os.makedirs("static", exist_ok=True)
-os.makedirs("templates", exist_ok=True)
-os.makedirs("temp", exist_ok=True)
-os.makedirs("output", exist_ok=True)
-os.makedirs("logs", exist_ok=True)
+# Crear un archivo index.html de respaldo SOLO si la carpeta quedó completamente vacía
+RUTA_INDEX = os.path.join(BASE_DIR, "templates", "index.html")
+if not os.path.exists(RUTA_INDEX):
+    with open(RUTA_INDEX, "w", encoding="utf-8") as f:
+        f.write("<h1>Servidor Online - Sube tu index.html real a la carpeta templates de GitHub</h1>")
 
-# Crear un archivo fantasma index.html si no existe para que Jinja2 no falle
-if not os.path.exists("templates/index.html"):
-    with open("templates/index.html", "w") as f:
-        f.write("<h1>Servidor Online - Esperando Frontend</h1>")
-
-# Montar estáticos después de asegurar que la carpeta existe
-app.mount("/static", StaticFiles(directory="static"), name="static")
-templates = Jinja2Templates(directory="templates")
+# =====================================================
+# CONFIGURAR MONTAJES CON RUTAS ABSOLUTAS
+# =====================================================
+app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
+templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 
 # =====================================================
 # PÁGINA PRINCIPAL
 # =====================================================
-
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
     return templates.TemplateResponse(
@@ -54,7 +57,6 @@ async def home(request: Request):
 # =====================================================
 # ESTADO DEL SERVIDOR
 # =====================================================
-
 @app.get("/health")
 async def health():
     return {
@@ -65,12 +67,12 @@ async def health():
 # =====================================================
 # SUBIDA DE ARCHIVOS
 # =====================================================
-
 @app.post("/upload")
 async def upload(file: UploadFile = File(...)):
-    destino = os.path.join("temp", file.filename)
+    destino = os.path.join(BASE_DIR, "temp", file.filename)
     with open(destino, "wb") as f:
         f.write(await file.read())
+    
     return JSONResponse(
         {
             "ok": True,
@@ -80,13 +82,8 @@ async def upload(file: UploadFile = File(...)):
     )
 
 # =====================================================
-# EJECUCIÓN LOCAL / PRODUCCIÓN
+# EJECUCIÓN
 # =====================================================
 if __name__ == "__main__":
-    puerto = int(os.environ.get("PORT", 8000))
-    uvicorn.run(
-        "app:app",
-        host="0.0.0.0",
-        port=puerto,
-        reload=False  # Falso en producción para evitar bucles de memoria
-    )
+    puerto = int(os.environ.get("PORT", 8080))
+    uvicorn.run("app:app", host="0.0.0.0", port=puerto, reload=False)
