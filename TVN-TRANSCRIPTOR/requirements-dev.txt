@@ -99,3 +99,5 @@ async def get_next_task():
     for task_id, info in TAREAS_PENDIENTES.items():
         if info["estado"] == "pendiente":
             info["estado"] = "
+
+
