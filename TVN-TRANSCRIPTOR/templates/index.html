@@ -37,4 +37,186 @@
                 <span id="status-percentage" class="text-[#E2001A]">0%</span>
             </div>
             <div class="w-full bg-gray-800 h-2 rounded-full overflow-hidden">
-                <div id="status-bar" class="bg-
+                <div id="status-bar" class="bg-[#E2001A] h-full" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <div id="player-card" class="bg-[#0b0f19] border border-gray-800 rounded-xl p-4 hidden flex flex-col gap-3">
+            <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">🎧 Control y Verificación de Audio:</span>
+            
+            <video id="mediaPlayer" class="w-full max-h-48 bg-black rounded-lg hidden" controls></video>
+            <audio id="audioPlayer" class="w-full hidden" controls></audio>
+
+            <div class="flex flex-wrap items-center justify-between gap-2 bg-[#121824] p-2 rounded-lg border border-gray-800">
+                <div class="flex items-center gap-1">
+                    <button type="button" onclick="saltarTiempo(-10)" class="bg-gray-800 hover:bg-gray-700 text-xs px-2.5 py-1.5 rounded font-medium">⏪ -10s</button>
+                    <button type="button" onclick="saltarTiempo(10)" class="bg-gray-800 hover:bg-gray-700 text-xs px-2.5 py-1.5 rounded font-medium">⏩ +10s</button>
+                </div>
+
+                <div class="flex items-center gap-1 text-xs">
+                    <span class="text-gray-400 mr-1 font-bold">Velocidad:</span>
+                    <button type="button" id="btn-v05" onclick="cambiarVelocidad(0.5, 'btn-v05')" class="vel-btn bg-gray-800 hover:bg-gray-700 px-2 py-1 rounded">x0.5</button>
+                    <button type="button" id="btn-v10" onclick="cambiarVelocidad(1.0, 'btn-v10')" class="vel-btn bg-[#E2001A] px-2 py-1 rounded font-bold">x1</button>
+                    <button type="button" id="btn-v20" onclick="cambiarVelocidad(2.0, 'btn-v20')" class="vel-btn bg-gray-800 hover:bg-gray-700 px-2 py-1 rounded">x2</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="result-card" class="flex-1 flex flex-col gap-1 hidden">
+            <div class="flex justify-between items-center">
+                <label class="text-xs font-bold text-gray-400 uppercase tracking-wider">Libreto Transcrito (Editable):</label>
+                <span id="live-badge" class="text-[10px] bg-amber-950 text-amber-400 border border-amber-800 px-2 py-0.5 rounded">Esperando motor</span>
+            </div>
+            <textarea id="transcription-output" class="w-full flex-1 min-h-[220px] p-4 bg-[#161f30] border-l-4 border-[#E2001A] text-gray-100 font-mono text-sm rounded-r-xl focus:outline-none focus:bg-[#1a2436] resize-y" placeholder="El texto aparecerá aquí..."></textarea>
+        </div>
+    </main>
+
+    <footer class="p-3 text-center text-[11px] text-gray-600 border-t border-gray-900 bg-[#0b0f19]">
+        Departamento de Prensa TVN © 2026
+    </footer>
+
+    <script>
+        const dropzone = document.getElementById('dropzone');
+        const fileInput = document.getElementById('fileInput');
+        const statusCard = document.getElementById('status-card');
+        const statusBar = document.getElementById('status-bar');
+        const statusText = document.getElementById('status-text');
+        const statusPercentage = document.getElementById('status-percentage');
+        const playerCard = document.getElementById('player-card');
+        const mediaPlayer = document.getElementById('mediaPlayer');
+        const audioPlayer = document.getElementById('audioPlayer');
+        const resultCard = document.getElementById('result-card');
+        const outputText = document.getElementById('transcription-output');
+        const globalBadge = document.getElementById('global-badge');
+        const liveBadge = document.getElementById('live-badge');
+
+        let activePlayer = null;
+
+        // Desbloqueo total de los eventos de click y archivos
+        dropzone.addEventListener('click', () => {
+            fileInput.click();
+        });
+        
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) procesarArchivo(e.target.files[0]);
+        });
+
+        // Habilitar Arrastre Nativo
+        window.addEventListener('dragover', (e) => e.preventDefault());
+        window.addEventListener('drop', (e) => e.preventDefault());
+
+        dropzone.addEventListener('dragover', (e) => { 
+            e.preventDefault(); 
+            dropzone.style.borderColor = '#E2001A'; 
+        });
+        
+        dropzone.addEventListener('dragleave', () => { 
+            dropzone.style.borderColor = '#374151'; 
+        });
+        
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.style.borderColor = '#374151';
+            if (e.dataTransfer.files.length > 0) procesarArchivo(e.dataTransfer.files[0]);
+        });
+
+        function procesarArchivo(file) {
+            if (!file) return;
+
+            const fileURL = URL.createObjectURL(file);
+            playerCard.classList.remove('hidden');
+
+            if (file.type.startsWith('video/')) {
+                mediaPlayer.src = fileURL;
+                mediaPlayer.classList.remove('hidden');
+                audioPlayer.classList.add('hidden');
+                activePlayer = mediaPlayer;
+            } else {
+                audioPlayer.src = fileURL;
+                audioPlayer.classList.remove('hidden');
+                mediaPlayer.classList.add('hidden');
+                activePlayer = audioPlayer;
+            }
+
+            statusCard.classList.remove('hidden');
+            resultCard.classList.remove('hidden');
+            outputText.value = "";
+            
+            globalBadge.innerText = "Subiendo...";
+            globalBadge.className = "bg-red-950 text-red-400 border border-red-800 text-xs px-3 py-0.5 rounded-full";
+            liveBadge.innerText = "Enviando audio a cola...";
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '/upload', true);
+
+            xhr.upload.addEventListener('progress', (e) => {
+                if (e.lengthComputable) {
+                    const pct = Math.round((e.loaded / e.total) * 100);
+                    statusBar.style.width = pct + '%';
+                    statusPercentage.innerText = pct + '%';
+                    if (pct === 100) {
+                        statusText.innerText = "Guardando en servidor Railway...";
+                    }
+                }
+            });
+
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    const res = JSON.parse(xhr.responseText);
+                    statusText.innerText = "Conectando con Google Colab (Motor IA)...";
+                    iniciarMonitoreo(res.task_id);
+                } else {
+                    statusText.innerText = "Error al subir el archivo multimedia.";
+                }
+            };
+            xhr.send(formData);
+        }
+
+        function iniciarMonitoreo(taskId) {
+            liveBadge.innerText = "Procesando transcripción...";
+            liveBadge.className = "text-[10px] bg-blue-950 text-blue-400 border border-blue-800 px-2 py-0.5 rounded";
+
+            const loop = setInterval(async () => {
+                try {
+                    const res = await fetch(`/api/status/${taskId}`);
+                    const data = await res.json();
+
+                    if (data.estado === 'procesando') {
+                        liveBadge.innerText = "IA trabajando en el archivo...";
+                        globalBadge.innerText = "Transcribiendo...";
+                    } else if (data.estado === 'completado') {
+                        clearInterval(loop);
+                        statusCard.classList.add('hidden');
+                        outputText.value = data.texto;
+                        
+                        globalBadge.innerText = "Completado";
+                        globalBadge.className = "bg-emerald-950 text-emerald-400 border border-emerald-800 text-xs px-3 py-0.5 rounded-full";
+                        
+                        liveBadge.innerText = "Transcripción finalizada (Editable)";
+                        liveBadge.className = "text-[10px] bg-emerald-950 text-emerald-400 border border-emerald-800 px-2 py-0.5 rounded";
+                    }
+                } catch (err) {
+                    console.error("Error consultando estado:", err);
+                }
+            }, 2000);
+        }
+
+        function saltarTiempo(segundos) {
+            if (activePlayer) activePlayer.currentTime += segundos;
+        }
+
+        function cambiarVelocidad(valor, idBoton) {
+            if (!activePlayer) return;
+            activePlayer.playbackRate = valor;
+            
+            document.querySelectorAll('.vel-btn').forEach(btn => {
+                btn.className = "vel-btn bg-gray-800 hover:bg-gray-700 px-2 py-1 rounded text-xs";
+            });
+            document.getElementById(idBoton).className = "vel-btn bg-[#E2001A] px-2 py-1 rounded text-xs font-bold text-white";
+        }
+    </script>
+</body>
+</html>
